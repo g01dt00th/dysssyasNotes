@@ -6,12 +6,10 @@
 //
 
 import SwiftUI
-import Foundation
 
 struct ContentView: View {
 
-    @ObservedObject var mainD = MyData()
-    @Environment(\.colorScheme) var systemColorScheme
+    @StateObject var mainD = MyData()
     @State var myColorScheme: ColorScheme?
     
     var body: some View {
@@ -20,22 +18,21 @@ struct ContentView: View {
                 HStack {
                     TextField("Add the name of new note....", text: $mainD.newNote)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                    Button(action: {
-                        guard !self.mainD.newNote.isEmpty else {return}
-                        self.mainD.allNotes.append(NoteItem(note: self.mainD.newNote))
-                        self.mainD.newNote = ""
-                        self.mainD.saveNotes()
-                    }) {
+                    Button(action: mainD.createNote) {
                         Image(systemName: "plus")
                     }
+                    .disabled(mainD.newNote.isEmpty)
                     
                     .padding()
                 }
                 .padding()
                 
                 List {
-                    ForEach(mainD.allNotes) { noteItem in
-                        NavigationLink(destination: DetailView(item: noteItem, mainD: mainD)) {
+                    ForEach($mainD.allNotes) { $noteItem in
+                        NavigationLink(
+                            destination: DetailView(item: $noteItem)
+                                            .onDisappear(perform: mainD.saveNotes)
+                        ) {
                             Text((((noteItem.note).split(separator: "\n")).first) ?? "")
                         }
                     }.onDelete(perform: mainD.deleteNote)
@@ -46,12 +43,8 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .onAppear(perform: mainD.loadNotes)
-        .colorScheme(myColorScheme ?? systemColorScheme)
+        .preferredColorScheme(myColorScheme)
     }
-
-    
-
-    
 }
 
 
